@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:amq="http://activemq.apache.org/schema/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+  http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core.xsd">
+
+    <!-- JmsTemplate Definition -->
+    <bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+        <property name="connectionFactory" ref="connectionFactory" />
+        <property name="defaultDestination" ref="destinationQueue" />
+        <property name="messageConverter" ref="myMessageConverter" />
+    </bean>
+
+    <bean id="amqConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+        <constructor-arg index="0" value="tcp://localhost:61616" />
+    </bean>
+
+    <!-- ConnectionFactory Definition -->
+    <bean id="connectionFactory" class="org.springframework.jms.connection.SingleConnectionFactory">
+        <constructor-arg ref="amqConnectionFactory" />
+    </bean>
+
+    <bean id="destinationQueue" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg index="0" value="IN_QUEUE_EMAIL" />
+    </bean>
+
+    <bean id="jmsMessageSender" class="hello.JmsMessageSender">
+        <property name="queue" ref="destinationQueue" />
+        <property name="jmsTemplate" ref="jmsTemplate" />
+    </bean>
+
+    <bean id="myMessageConverter" class="hello.EmailMessageConverter" />
+
+    <!-- this is the Message-Driven POJO (MDP) -->
+    <bean id="messageListener" class="hello.JmsMessageListener">
+        <property name="jmsTemplate" ref="jmsTemplate" />
+        <property name="queue" ref="destinationQueue" />
+    </bean>
+
+    <bean id="errorHandler" class="hello.JmsErrorHandler" />
+
+    <!-- DefaultMessageListenerContainer is the default message listener container Spring provides along with many other specialized containers -->
+	<bean id="jmsContainer" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+        <property name="connectionFactory" ref="connectionFactory" />
+        <property name="destinationName" value="IN_QUEUE_EMAIL" />
+        <property name="messageListener" ref="messageListener" />
+        <property name="errorHandler" ref="errorHandler" />
+    </bean> 
+</beans>
